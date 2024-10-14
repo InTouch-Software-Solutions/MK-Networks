@@ -12,6 +12,8 @@ use App\Http\Controllers\API\SimDataController;
 use App\Http\Controllers\API\VendorController;
 use App\Http\Controllers\API\WishlistController;
 use App\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\FreebieAssignmentController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +89,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/products', [ProductController::class, 'saveproduct']);
     Route::post('/update/{id}', [ProductController::class, 'Updateproduct']);
     Route::get('/deleteproduct/{id}', [ProductController::class, 'deleteProduct']);
+
+    // Freebie routes
+
+    Route::post('/assign-freebie', [FreebieAssignmentController::class, 'assignFreebie']);
+
     
 
 });

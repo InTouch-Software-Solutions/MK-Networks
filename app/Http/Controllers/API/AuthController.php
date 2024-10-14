@@ -31,7 +31,7 @@ class AuthController extends Controller
             $user->token = $token;
             $user->save();
 
-            return response(content: ['user' => $user, 'token' => $token], 200);
+            return response(['user' => $user, 'token' => $token], 200);
         }
 
         return response(['message' => 'Email or password is incorrect'], 401);
@@ -67,7 +67,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(data: ['errors' => $validator->errors()],422);
+            return response()->json(['errors' => $validator->errors()],422);
         }
 
         $user = User::create([
