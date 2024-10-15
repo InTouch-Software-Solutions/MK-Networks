@@ -1,18 +1,20 @@
 <?php
 
+use AccessoriesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CartController;
-use App\Http\Controllers\API\CheckOutController;
+use App\Http\Controllers\API\VendorController;
 use App\Http\Controllers\API\ProductController;
+use App\Http\Controllers\API\SimDataController;
+use App\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\API\CheckOutController;
+use App\Http\Controllers\API\SalesmanController;
+use App\Http\Controllers\API\WishlistController;
 use App\Http\Controllers\API\RoutePlanController;
 use App\Http\Controllers\API\SimAssignController;
-use App\Http\Controllers\API\SimDataController;
-use App\Http\Controllers\API\VendorController;
-use App\Http\Controllers\API\WishlistController;
-use App\Http\Controllers\API\CategoryController;
-use App\Http\Controllers\FreebieAssignmentController;
+use App\Http\Controllers\API\FreebieAssignmentController;
 
 
 /*
@@ -41,7 +43,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/upload_provider_excel', [SimDataController::class, 'uploadProviderExcel']);
     Route::get('/showexcel', [SimDataController::class, 'showexcel']);
 
-    
+
     Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
     Route::post('/admin/assign-sim', [SimAssignController::class, 'simAssignByAdmin']);
     Route::post('/salesman/assign-sim', [SimAssignController::class, 'simAssignBySalesman']);
@@ -49,52 +51,54 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/salesman/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesperson']);
 
 
-    Route::post('/createvendor', [VendorController::class, 'savevendor']);
-    Route::get('/getvendor', [VendorController::class, 'viewvendor']);
-    Route::get('/get_sales_executive', [VendorController::class, 'get_sales_executive']);
-    Route::post('/create_sales_executive', [VendorController::class, 'create_sales_executive']);
-    
+    Route::post('/vendors', [VendorController::class, 'store']);
+    Route::get('/vendors', [VendorController::class, 'index']);
+    Route::post('/salesman', [SalesmanController::class, 'store']);
+    Route::get('/salesman', [SalesmanController::class, 'index']);
 
     Route::post('/routes/upload', [RoutePlanController::class, 'uploadroute'])->name('routes.upload');
     Route::get('/routes', [RoutePlanController::class, 'showroute'])->name('routes.show');
     Route::post('/plannings', [RoutePlanController::class, 'store'])->name('plannings.store');
-    Route::get('/all-plannings', [RoutePlanController::class, 'getAllPlannings'])->name('plannings.all');
-    Route::get('/plannings/{id}', [RoutePlanController::class, 'getPlannings']);
+    Route::get('/plannings', [RoutePlanController::class, 'getAllPlannings'])->name('plannings.index');
+    Route::get('/plannings/{id}', [RoutePlanController::class, 'getPlannings'])->name('plannings.show');
     // Route::get('shops', [RoutePlanController::class, 'getShopsByArea']);
     // Route::post('/assign-route', [RoutePlanController::class, 'assignroute']);
 
+    // Cart Routes
+    Route::post('/carts', [CartController::class, 'store'])->name('carts.store');
+    Route::get('/carts', [CartController::class, 'index'])->name('carts.index');
+    Route::delete('/carts/{id}', [CartController::class, 'destroy'])->name('carts.destroy');
+
+    // Wishlist routes
+    Route::post('/wishlists', [WishlistController::class, 'store'])->name('wishlists.store');
+    Route::get('/wishlists', [WishlistController::class, 'index'])->name('wishlists.index');
+    Route::delete('/wishlists/{id}', [WishlistController::class, 'destroy'])->name('wishlists.destroy');
 
 
-    Route::post('addcart', [CartController::class, 'addProductToCart']);
-    Route::get('getcart', [CartController::class, 'viewCart']);
-    Route::delete('cart/{id}', [CartController::class, 'deleteCart']);
+    // Checkout routes
+    Route::post('/checkout', [CheckOutController::class, 'store'])->name('checkout.store');
+    Route::get('/checkout', [CheckOutController::class, 'index'])->name('checkout.index');
 
-    Route::post('addwishlist', [WishlistController::class, 'addProductToWishlist']);
-    Route::get('getwishlist', [WishlistController::class, 'viewWishlist']);
-    Route::delete('wishlist/{id}', [WishlistController::class, 'deleteWishlist']);
 
-    Route::post('/checkout', [CheckOutController::class, 'saveorder']);
-    Route::get('/getcheckout', [CheckOutController::class, 'viewCheckout']);
 
-    Route::post('/assign-accessories', [AccessoriesController::class, 'accessories']);
-    Route::post('/salesman/assign-accessories', [AccessoriesController::class, 'assigntosalesman']);
-    Route::get('/getaccessories', [AccessoriesController::class, 'viewaccessories']);
-    Route::get('/salesperson/accessories-assignments', [AccessoriesController::class, 'viewaccessories1']);
-    Route::post('/createCategory', [CategoryController::class, 'createCategory']);
-    Route::post('/updatecategory/{id}', [CategoryController::class, 'updateCategory']);
-    Route::get('/deleteCategory/{id}', [CategoryController::class, 'deleteCategory']);
+    // Category Routes
+    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+    Route::put('/categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-    Route::get('/getproduct', [ProductController::class, 'getproduct']);
-    Route::get('/getCategory', [CategoryController::class, 'getCategory']);
 
-    Route::post('/products', [ProductController::class, 'saveproduct']);
-    Route::post('/update/{id}', [ProductController::class, 'Updateproduct']);
-    Route::get('/deleteproduct/{id}', [ProductController::class, 'deleteProduct']);
+    // Product Routes
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+
 
     // Freebie routes
-
-    Route::post('/assign-freebie', [FreebieAssignmentController::class, 'assignFreebie']);
-    Route::get('/get-freebies/{id}', [FreebieAssignmentController::class, 'getAssignedFreebies'])->name('get-freebies');
+    Route::get('/freebie-assignments', [FreebieAssignmentController::class, 'index'])->name('freebies.index');
+    Route::post('/freebie-assignments', [FreebieAssignmentController::class, 'store'])->name('freebies.store');
+    Route::get('/freebie-assignments/{id}', [FreebieAssignmentController::class, 'show'])->name('freebies.show');
 
 
 

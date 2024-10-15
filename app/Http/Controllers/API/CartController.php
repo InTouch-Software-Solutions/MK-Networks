@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
-    public function addProductToCart(Request $request)
+    public function store(Request $request)
     {
         // Validate input
         $request->validate([
@@ -41,7 +41,7 @@ class CartController extends Controller
         return response()->json(['message' => 'Product added to cart successfully', 'data' => $cart]);
     }
 
-    public function viewCart()
+    public function index()
     {
         $user = Auth::user();
         $carts = Cart::where('user_id', $user->id)->get();
@@ -55,7 +55,7 @@ class CartController extends Controller
 
     }
 
-    public function deleteCart($id)
+    public function destroy($id)
     {
         $cart = Cart::find($id);
         if($cart)

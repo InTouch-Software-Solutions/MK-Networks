@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
 
+
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
@@ -11,7 +13,19 @@ use App\Models\FreebieAssignment;
 
 class FreebieAssignmentController extends Controller
 {
-    public function assignFreebie(Request $request)
+
+    // Get all freebies assigned to salesmen
+    public function index()
+    {
+        $freebies = FreebieAssignment::all();
+
+        if ($freebies->isEmpty()) {
+            return response()->json(['message' => 'No freebies assigned yet.'], 404);
+        }
+
+        return response()->json(['status' => 'success', 'data' => $freebies], 200);
+    }
+    public function store(Request $request)
     {
 
         $validator = Validator::make($request->all(), [
@@ -59,7 +73,7 @@ class FreebieAssignmentController extends Controller
 
 
     // Get freebies assigned to a specific salesman by ID
-    public function getAssignedFreebies($id)
+    public function show($id)
     {
         // Check if the salesman exists and has the role 'sales'
         $salesman = User::find($id);

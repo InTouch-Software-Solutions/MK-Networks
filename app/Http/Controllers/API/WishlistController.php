@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class WishlistController extends Controller
 {
-    public function addProductToWishlist(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'product_id' => 'required',
@@ -36,7 +36,7 @@ class WishlistController extends Controller
         return response()->json(['message' => 'Product added to Wishlist successfully', 'data' => $wishlist]);
     }
 
-    public function viewWishlist()
+    public function index()
     {
         $user = Auth::user();
         $wishlists = Wishlist::where('user_id', $user->id)->get();
@@ -50,7 +50,7 @@ class WishlistController extends Controller
 
     }
 
-    public function deleteWishlist($id)
+    public function destroy($id)
     {
         $wishlist = Wishlist::findOrFail($id);
         $wishlist->delete();

@@ -8,14 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class Vendor extends Model
 {
     protected $table = "vendors";
-
+  
     protected $fillable = [
-        'name',
-        'email',
-        'number',
+        'user_id',
+        'phone_number',
         'address',
         'shop',
         'area',
         'postcode',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

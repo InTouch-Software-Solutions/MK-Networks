@@ -12,7 +12,7 @@ class CheckOutController extends Controller
 {
 
 
-    public function saveorder(Request $request)
+    public function store(Request $request)
     {
         // Validate the request data
         $request->validate([
@@ -44,7 +44,7 @@ class CheckOutController extends Controller
         return response()->json($orders, 200);
     }
 
-    public function viewCheckout()
+    public function index()
     {
         $checkouts = CheckOut::all();
 
