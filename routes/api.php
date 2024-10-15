@@ -40,7 +40,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/upload_provider_excel', [SimDataController::class, 'uploadProviderExcel']);
     Route::get('/showexcel', [SimDataController::class, 'showexcel']);
-    Route::post('/uploadroute', [RoutePlanController::class, 'uploadroute']);
     Route::get('/showroute', [RoutePlanController::class, 'showroute']);
     Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
 
@@ -50,7 +49,6 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/salesperson/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesperson']);
 
 
-    Route::post('/store', [RoutePlanController::class, 'store']);
     Route::post('/createvendor', [VendorController::class, 'savevendor']);
     Route::get('/getvendor', [VendorController::class, 'viewvendor']);
 
@@ -58,11 +56,15 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/get_sales_executive', [VendorController::class, 'get_sales_executive']);
     Route::post('/create_sales_executive', [VendorController::class, 'create_sales_executive']);
 
-    Route::get('shops', [RoutePlanController::class, 'getShopsByArea']);
-    Route::get('plannings', [RoutePlanController::class, 'getPlannings']);
-    Route::post('/assign-route', [RoutePlanController::class, 'assignroute']);
+    Route::post('/routes/upload', [RoutePlanController::class, 'uploadroute'])->name('routes.upload');
+    Route::get('/routes', [RoutePlanController::class, 'showroute'])->name('routes.show');
+    Route::post('/plannings', [RoutePlanController::class, 'store'])->name('plannings.store');
+    Route::get('/all-plannings', [RoutePlanController::class, 'getAllPlannings'])->name('plannings.all');
+    Route::get('/plannings/{id}', [RoutePlanController::class, 'getPlannings']);
+    // Route::get('shops', [RoutePlanController::class, 'getShopsByArea']);
+    // Route::post('/assign-route', [RoutePlanController::class, 'assignroute']);
 
-    
+
 
     Route::post('addcart', [CartController::class, 'addProductToCart']);
     Route::get('getcart', [CartController::class, 'viewCart']);
@@ -82,10 +84,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/createCategory', [CategoryController::class, 'createCategory']);
     Route::post('/updatecategory/{id}', [CategoryController::class, 'updateCategory']);
     Route::get('/deleteCategory/{id}', [CategoryController::class, 'deleteCategory']);
-    
+
     Route::get('/getproduct', [ProductController::class, 'getproduct']);
     Route::get('/getCategory', [CategoryController::class, 'getCategory']);
-    
+
     Route::post('/products', [ProductController::class, 'saveproduct']);
     Route::post('/update/{id}', [ProductController::class, 'Updateproduct']);
     Route::get('/deleteproduct/{id}', [ProductController::class, 'deleteProduct']);
@@ -94,8 +96,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/assign-freebie', [FreebieAssignmentController::class, 'assignFreebie']);
     Route::get('/get-freebies/{id}', [FreebieAssignmentController::class, 'getAssignedFreebies'])->name('get-freebies');
-    
 
-    
+
+
 
 });

@@ -52,17 +52,20 @@ class RoutePlanController extends Controller
     }
 
 
-   
+
 
     public function store(Request $request)
     {
         $request->validate([
             'user_id' => 'required',
             'date' => 'required',
-            'area' => 'required',
-           
+            'area' => 'required|array', // Ensure area is an array
+            'area.*.area' => 'required|string', // Ensure each area has a name
+            'area.*.shops' => 'required|array', // Ensure shops is an array
+            'area.*.shops.*' => 'integer', // Ensure each shop ID is an integer
+
         ]);
-        
+
 
         // Check if user is a salesperson
         $user = User::find($request->user_id);
@@ -73,6 +76,12 @@ class RoutePlanController extends Controller
         // Create an associative array for areas and shops
         $areaShopAssignments = [];
         foreach ($request->area as $areaAssignment) {
+
+            // Check if shops array is empty
+            if (empty($areaAssignment['shops'])) {
+                return response()->json(['message' => 'Shops array cannot be empty for area: ' . $areaAssignment['area']], 400);
+            }
+
             $areaShopAssignments[] = [
                 'area' => $areaAssignment['area'],
                 'shops' => $areaAssignment['shops']
@@ -90,7 +99,7 @@ class RoutePlanController extends Controller
         return response()->json(['message' => 'Shops assigned successfully', 'data' => $route]);
     }
 
-       public function getPlannings()
+    public function getAllPlannings()
     {
 
         // Fetch all planning records
@@ -104,6 +113,24 @@ class RoutePlanController extends Controller
 
         return response()->json($plannings);
     }
+
+    public function getPlannings($userId)
+    {
+        $plannings = Planning::where('user_id', $userId)->get();
+
+        // Check if the user has any planning records
+        if ($plannings->isEmpty()) {
+            return response()->json(['message' => 'No planning records found for the specified salesperson.'], 404);
+        }
+
+        foreach ($plannings as $planning) {
+            $shopIds = json_decode($planning->shops, true);
+            $planning->shops = Route::whereIn('id', $shopIds)->get();
+        }
+
+        return response()->json($plannings);
+    }
+
 
 
 
