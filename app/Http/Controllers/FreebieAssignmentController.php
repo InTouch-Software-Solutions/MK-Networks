@@ -56,4 +56,32 @@ class FreebieAssignmentController extends Controller
             'freebie_assignment' => $freebieAssignment
         ], 201);
     }
+
+
+    // Get freebies assigned to a specific salesman by ID
+    public function getAssignedFreebies($id)
+    {
+        // Check if the salesman exists and has the role 'sales'
+        $salesman = User::find($id);
+        if (!$salesman || $salesman->role !== 'sales') {
+            return response()->json([
+                'error' => 'Invalid salesman',
+                'message' => 'The specified user is not a salesman.'
+            ], 400);
+        }
+
+        // Retrieve freebie assignments for the given salesman ID
+        $freebies = FreebieAssignment::where('salesman_id', $id)->get();
+
+        if ($freebies->isEmpty()) {
+            return response()->json([
+                'message' => 'No freebies assigned to this salesman.'
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Freebies retrieved successfully.',
+            'freebies' => $freebies
+        ], 200);
+    }
 }

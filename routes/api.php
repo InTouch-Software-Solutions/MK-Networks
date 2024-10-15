@@ -93,6 +93,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     // Freebie routes
 
     Route::post('/assign-freebie', [FreebieAssignmentController::class, 'assignFreebie']);
+    Route::get('/get-freebies/{id}', [FreebieAssignmentController::class, 'getAssignedFreebies'])->name('get-freebies');
+    
 
     
 
