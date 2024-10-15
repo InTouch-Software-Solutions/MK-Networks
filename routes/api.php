@@ -40,21 +40,20 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/upload_provider_excel', [SimDataController::class, 'uploadProviderExcel']);
     Route::get('/showexcel', [SimDataController::class, 'showexcel']);
-    Route::get('/showroute', [RoutePlanController::class, 'showroute']);
-    Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
 
+    
+    Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
     Route::post('/admin/assign-sim', [SimAssignController::class, 'simAssignByAdmin']);
     Route::post('/salesman/assign-sim', [SimAssignController::class, 'simAssignBySalesman']);
     Route::get('/admin/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForAdmin']);
-    Route::get('/salesperson/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesperson']);
+    Route::get('/salesman/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesperson']);
 
 
     Route::post('/createvendor', [VendorController::class, 'savevendor']);
     Route::get('/getvendor', [VendorController::class, 'viewvendor']);
-
-
     Route::get('/get_sales_executive', [VendorController::class, 'get_sales_executive']);
     Route::post('/create_sales_executive', [VendorController::class, 'create_sales_executive']);
+    
 
     Route::post('/routes/upload', [RoutePlanController::class, 'uploadroute'])->name('routes.upload');
     Route::get('/routes', [RoutePlanController::class, 'showroute'])->name('routes.show');
