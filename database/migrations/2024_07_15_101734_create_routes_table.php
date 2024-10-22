@@ -12,10 +12,11 @@ return new class extends Migration {
     {
         Schema::create('routes', function (Blueprint $table) {
             $table->id();
+            $table->string('city');  
+            $table->string('area'); 
+            $table->string('postcode');
             $table->string('shop');
             $table->string('address');
-            $table->string('postcode');
-            $table->string('area');
             $table->timestamps();
         });
     }

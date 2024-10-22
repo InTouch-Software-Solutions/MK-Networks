@@ -9,5 +9,5 @@ class Route extends Model
 {
     protected $table = "routes";
 
-    protected $fillable = ['shop', 'address', 'postcode', 'area'];
+    protected $fillable = ['city','area', 'postcode','shop', 'address' ];
 }

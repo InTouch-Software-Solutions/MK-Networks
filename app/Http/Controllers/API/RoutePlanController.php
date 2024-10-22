@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
-use App\Models\AssignRoute;
-use App\Models\Route;
 use App\Models\User;
+use App\Models\Route;
 use App\Models\Planning;
+use App\Models\AssignRoute;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -15,34 +16,39 @@ class RoutePlanController extends Controller
 {
 
     public function uploadroute(Request $request)
-    {
+{
+    // Validate the request
+    $request->validate([
+        'file' => 'required|mimes:xlsx,csv|max:2048',
+    ]);
 
-        // Validate the request
-        $request->validate([
-            'file' => 'required|mimes:xlsx,csv|max:2048',
-        ]);
+    $originalFile = $request->file('file');
+    $extension = $originalFile->getClientOriginalExtension();
+    $filename = 'routes-' . time() . '.' . $extension; 
 
-        // Store the file
-        $filePath = $request->file('file')->store('uploads');
+    $filePath = $originalFile->storeAs('uploads', $filename);
 
+    $spreadsheet = IOFactory::load(Storage::path($filePath));
+    $worksheet = $spreadsheet->getActiveSheet();
 
-        // Load the file
-        $spreadsheet = IOFactory::load(Storage::path($filePath));
-        $worksheet = $spreadsheet->getActiveSheet();
+    $highestRow = $worksheet->getHighestRow();
 
-        // Get all rows as an array
-        $highestRow = $worksheet->getHighestRow();
-        for ($row = 1; $row <= $highestRow; $row++) { // Start from 2 to skip header row
-            $routeData = new Route();
-            $routeData->shop = $worksheet->getCell('A' . $row)->getValue();
-            $routeData->address = $worksheet->getCell('B' . $row)->getValue();
-            $routeData->postcode = $worksheet->getCell('C' . $row)->getValue();
-            $routeData->area = $worksheet->getCell('D' . $row)->getValue();
-            $routeData->save();
-        }
-
-        return response()->json(['message' => 'File data uploaded successfully']);
+    for ($row = 2; $row <= $highestRow; $row++) {
+        $postcode = $worksheet->getCell('D' . $row)->getValue(); 
+        $area = strtok($postcode, ' '); 
+        
+        $routeData = new Route();
+        $routeData->city = $worksheet->getCell('E' . $row)->getValue();
+        $routeData->area = $area;
+        $routeData->postcode = $postcode;
+        $routeData->shop = $worksheet->getCell('B' . $row)->getValue(); 
+        $routeData->address = $worksheet->getCell('C' . $row)->getValue(); 
+        $routeData->save();
     }
+
+    return response()->json(['message' => 'File data uploaded successfully']);
+}
+
 
 
     public function showroute()

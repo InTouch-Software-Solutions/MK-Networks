@@ -14,6 +14,8 @@ use App\Http\Controllers\API\WishlistController;
 use App\Http\Controllers\API\RoutePlanController;
 use App\Http\Controllers\API\SimAssignController;
 use App\Http\Controllers\API\FreebieAssignmentController;
+use App\Http\Controllers\API\RouteController;
+
 
 
 /*
@@ -101,5 +103,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 
 
+    //route controller
 
-});
+    Route::get('/cities', [RouteController::class, 'getCities']);
+    Route::get('/cities/{city}', [RouteController::class, 'getAreas']);
+    Route::get('/areas/{area}', [RouteController::class, 'getPostcodes']);
+    Route::get('/postcodes/{postcode}', [RouteController::class, 'getShops']);
+    
+
+
+
+}); 
