@@ -101,7 +101,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
 
-    // Freebie routes
+    // Freebies assign to salesman routes
     Route::get('/freebie-assignments', [FreebieAssignmentController::class, 'index'])->name('freebies.index');
     Route::post('/freebie-assignments', [FreebieAssignmentController::class, 'store'])->name('freebies.store');
     Route::get('/freebie-assignments/{id}', [FreebieAssignmentController::class, 'show'])->name('freebies.show');

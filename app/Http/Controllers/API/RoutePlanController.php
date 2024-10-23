@@ -113,22 +113,30 @@ class RoutePlanController extends Controller
         $plannings = Planning::where('date', $date)->get();    
         $response = [
             'date' => $date,
-            'areas' => []
+            'plannings' => [] 
         ];
     
         foreach ($plannings as $planning) {
+            $user = User::where('id', $planning->user_id)->select('name')->first();
             $areaAssignments = json_decode($planning->area, true);
+            $areas = [];
     
             foreach ($areaAssignments as $assignment) {
                 $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);    
-                $response['areas'][] = [
+                $areas[] = [
                     'area' => $assignment['area'], 
                     'shops' => $shops 
                 ];
             }
+            $response['plannings'][] = [
+                'salesman' => $user->name ?? 'Unknown', 
+                'areas' => $areas
+            ];
         }
         return response()->json($response);
     }
+    
+    
     
     
     public function getPlannings($userId, Request $request)
