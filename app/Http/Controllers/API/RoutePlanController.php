@@ -11,43 +11,45 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Carbon\Carbon;
+
 
 class RoutePlanController extends Controller
 {
 
     public function uploadroute(Request $request)
-{
-    // Validate the request
-    $request->validate([
-        'file' => 'required|mimes:xlsx,csv|max:2048',
-    ]);
+    {
+        // Validate the request
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv|max:2048',
+        ]);
 
-    $originalFile = $request->file('file');
-    $extension = $originalFile->getClientOriginalExtension();
-    $filename = 'routes-' . time() . '.' . $extension; 
+        $originalFile = $request->file('file');
+        $extension = $originalFile->getClientOriginalExtension();
+        $filename = 'routes-' . time() . '.' . $extension;
 
-    $filePath = $originalFile->storeAs('uploads', $filename);
+        $filePath = $originalFile->storeAs('uploads', $filename);
 
-    $spreadsheet = IOFactory::load(Storage::path($filePath));
-    $worksheet = $spreadsheet->getActiveSheet();
+        $spreadsheet = IOFactory::load(Storage::path($filePath));
+        $worksheet = $spreadsheet->getActiveSheet();
 
-    $highestRow = $worksheet->getHighestRow();
+        $highestRow = $worksheet->getHighestRow();
 
-    for ($row = 2; $row <= $highestRow; $row++) {
-        $postcode = $worksheet->getCell('D' . $row)->getValue(); 
-        $area = strtok($postcode, ' '); 
-        
-        $routeData = new Route();
-        $routeData->city = $worksheet->getCell('E' . $row)->getValue();
-        $routeData->area = $area;
-        $routeData->postcode = $postcode;
-        $routeData->shop = $worksheet->getCell('B' . $row)->getValue(); 
-        $routeData->address = $worksheet->getCell('C' . $row)->getValue(); 
-        $routeData->save();
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $postcode = $worksheet->getCell('D' . $row)->getValue();
+            $area = strtok($postcode, ' ');
+
+            $routeData = new Route();
+            $routeData->city = $worksheet->getCell('E' . $row)->getValue();
+            $routeData->area = $area;
+            $routeData->postcode = $postcode;
+            $routeData->shop = $worksheet->getCell('B' . $row)->getValue();
+            $routeData->address = $worksheet->getCell('C' . $row)->getValue();
+            $routeData->save();
+        }
+
+        return response()->json(['message' => 'File data uploaded successfully']);
     }
-
-    return response()->json(['message' => 'File data uploaded successfully']);
-}
 
 
 
@@ -59,31 +61,31 @@ class RoutePlanController extends Controller
 
 
 
-
+    // admin assign daily route plan to salesman 
     public function store(Request $request)
     {
         $request->validate([
             'user_id' => 'required',
-            'date' => 'required',
-            'area' => 'required|array', // Ensure area is an array
-            'area.*.area' => 'required|string', // Ensure each area has a name
-            'area.*.shops' => 'required|array', // Ensure shops is an array
-            'area.*.shops.*' => 'integer', // Ensure each shop ID is an integer
+            'date' => 'nullable|date',
+            'area' => 'required|array',
+            'area.*.area' => 'required|string',
+            'area.*.shops' => 'required|array',
+            'area.*.shops.*' => 'integer',
 
         ]);
 
 
-        // Check if user is a salesperson
         $user = User::find($request->user_id);
         if (!$user || $user->role !== 'sales') {
             return response()->json(['message' => 'User does not exist or doesn\'t have the sales role'], 403);
         }
 
-        // Create an associative array for areas and shops
+        $date = $request->date ?? Carbon::today()->format('Y-m-d');
+
+
         $areaShopAssignments = [];
         foreach ($request->area as $areaAssignment) {
 
-            // Check if shops array is empty
             if (empty($areaAssignment['shops'])) {
                 return response()->json(['message' => 'Shops array cannot be empty for area: ' . $areaAssignment['area']], 400);
             }
@@ -97,45 +99,65 @@ class RoutePlanController extends Controller
         // Create a new route planning record
         $route = planning::create([
             'user_id' => $request->user_id,
-            'date' => $request->date,
-            'area' => json_encode($areaShopAssignments), // Store area-shop assignments as JSON
+            'date' => $date,
+            'area' => json_encode($areaShopAssignments),
             'shops' => json_encode(array_merge(...array_column($areaShopAssignments, 'shops'))), // Flatten all shop IDs and store
         ]);
 
         return response()->json(['message' => 'Shops assigned successfully', 'data' => $route]);
     }
 
-    public function getAllPlannings()
+    public function getAllPlannings(Request $request)
     {
-
-        // Fetch all planning records
-        $plannings = Planning::all();
-
-        // Decode the shops JSON string and fetch associated routes
+        $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
+        $plannings = Planning::where('date', $date)->get();    
+        $response = [
+            'date' => $date,
+            'areas' => []
+        ];
+    
         foreach ($plannings as $planning) {
-            $shopIds = json_decode($planning->shops, true);
-            $planning->shops = Route::whereIn('id', $shopIds)->get();
+            $areaAssignments = json_decode($planning->area, true);
+    
+            foreach ($areaAssignments as $assignment) {
+                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);    
+                $response['areas'][] = [
+                    'area' => $assignment['area'], 
+                    'shops' => $shops 
+                ];
+            }
         }
-
-        return response()->json($plannings);
+        return response()->json($response);
     }
-
-    public function getPlannings($userId)
+    
+    
+    public function getPlannings($userId, Request $request)
     {
-        $plannings = Planning::where('user_id', $userId)->get();
-
-        // Check if the user has any planning records
+        $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
+        $plannings = Planning::where('user_id', $userId)->where('date', $date)->get();
         if ($plannings->isEmpty()) {
             return response()->json(['message' => 'No planning records found for the specified salesperson.'], 404);
         }
-
+        $response = [
+            'date' => $date,
+            'areas' => []
+        ];
+    
         foreach ($plannings as $planning) {
-            $shopIds = json_decode($planning->shops, true);
-            $planning->shops = Route::whereIn('id', $shopIds)->get();
+            $areaAssignments = json_decode($planning->area, true);
+    
+            foreach ($areaAssignments as $assignment) {
+                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
+                $response['areas'][] = [
+                    'area' => $assignment['area'], 
+                    'shops' => $shops 
+                ];
+            }
         }
-
-        return response()->json($plannings);
+        return response()->json($response);
     }
+    
+    
 
 
 

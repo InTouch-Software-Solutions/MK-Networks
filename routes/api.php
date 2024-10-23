@@ -45,7 +45,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/showexcel', [SimDataController::class, 'showexcel']);
 
 
-    Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
+    // Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
     Route::post('/admin/assign-sim', [SimAssignController::class, 'simAssignByAdmin']);
     Route::post('/salesman/assign-sim', [SimAssignController::class, 'simAssignBySalesman']);
     Route::get('/admin/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForAdmin']);
@@ -57,13 +57,18 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/salesman', [SalesmanController::class, 'store']);
     Route::get('/salesman', [SalesmanController::class, 'index']);
 
+    //Route plan routes
     Route::post('/routes/upload', [RoutePlanController::class, 'uploadroute'])->name('routes.upload');
     Route::get('/routes', [RoutePlanController::class, 'showroute'])->name('routes.show');
     Route::post('/plannings', [RoutePlanController::class, 'store'])->name('plannings.store');
     Route::get('/plannings', [RoutePlanController::class, 'getAllPlannings'])->name('plannings.index');
     Route::get('/plannings/{id}', [RoutePlanController::class, 'getPlannings'])->name('plannings.show');
-    // Route::get('shops', [RoutePlanController::class, 'getShopsByArea']);
-    // Route::post('/assign-route', [RoutePlanController::class, 'assignroute']);
+
+    Route::get('/cities', [RouteController::class, 'getCities']);
+    Route::get('/cities/{city}', [RouteController::class, 'getAreas']);
+    Route::get('/areas/{area}', [RouteController::class, 'getPostcodes']);
+    Route::get('/postcodes/{postcode}', [RouteController::class, 'getShops']);
+
 
     // Cart Routes
     Route::post('/carts', [CartController::class, 'store'])->name('carts.store');
@@ -82,14 +87,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
 
 
-    // Category Routes
+    // Category Routes- for accessories categories 
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
     Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
     Route::put('/categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
 
-    // Product Routes
+    // Product Routes- accessories
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
@@ -102,14 +107,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/freebie-assignments/{id}', [FreebieAssignmentController::class, 'show'])->name('freebies.show');
 
 
-
-    //route controller
-
-    Route::get('/cities', [RouteController::class, 'getCities']);
-    Route::get('/cities/{city}', [RouteController::class, 'getAreas']);
-    Route::get('/areas/{area}', [RouteController::class, 'getPostcodes']);
-    Route::get('/postcodes/{postcode}', [RouteController::class, 'getShops']);
     
+
+
+
+
+
+    
+
 
 
 
