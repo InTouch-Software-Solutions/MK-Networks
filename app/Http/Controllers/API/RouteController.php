@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 
 class RouteController extends Controller
 {
-     // Get list of all cities
+    // Get list of all cities
     public function getCities()
     {
         $cities = Route::distinct()->pluck('city')->toArray();
@@ -22,17 +22,23 @@ class RouteController extends Controller
         return response()->json($areas);
     }
 
-    // Get postcodes by selected area
-    public function getPostcodes($area)
+    // Get shops, addresses, and postcodes by selected area
+    public function getShopsByArea($area)
     {
-        $postcodes = Route::where('area', $area)->distinct()->pluck('postcode')->toArray();
-        return response()->json($postcodes);
+        $shopsData = Route::where('area', $area)
+            ->distinct()
+            ->get(['postcode', 'shop', 'address']);
+
+        $response = [];
+        foreach ($shopsData as $shop) {
+            $response[] = [
+                'postcode' => $shop->postcode,
+                'shop' => $shop->shop,
+                'address' => $shop->address,
+            ];
+        }
+
+        return response()->json($response);
     }
 
-    // Get shops by selected postcode
-    public function getShops($postcode)
-    {
-        $shops = Route::where('postcode', $postcode)->distinct()->get(['shop', 'address']);
-        return response()->json($shops);
-    }
 }
