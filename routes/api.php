@@ -100,21 +100,24 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
 
-    // Freebies assign to salesman routes
+    //freebie assignment
     Route::get('/freebie-assignments', [FreebieAssignmentController::class, 'index'])->name('freebies.index');
     Route::post('/freebie-assignments', [FreebieAssignmentController::class, 'store'])->name('freebies.store');
-    Route::get('/freebie-assignments/{id}', [FreebieAssignmentController::class, 'show'])->name('freebies.show');
-
-
-    
-
-
-
-
-
-    
+    Route::post('/salesman/assign-product', [FreebieAssignmentController::class, 'assignToVendor']);
+    Route::get('/salesman/inventory', [FreebieAssignmentController::class, 'salesmanInventory']);
+    Route::get('/vendor/inventory', [FreebieAssignmentController::class, 'vendorInventory']);
 
 
 
 
-}); 
+
+
+
+
+
+
+
+
+
+
+});
