@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class VendorController extends Controller
@@ -45,5 +46,28 @@ class VendorController extends Controller
     {
         $vendors = Vendor::with('user')->get();
         return response()->json(['vendors' => $vendors]);
+    }
+
+    public function destroy($id)
+    {
+        if (Auth::user() && Auth::user()->role !== 'vendor') {
+            $vendor = Vendor::find($id); 
+
+           
+            if (!$vendor) {
+                return response()->json(['message' => 'Vendor not found.'], 404);
+            }
+
+            // Soft delete the vendor
+            $vendor->delete();
+
+            if ($vendor->user) {
+                $vendor->user->delete(); // Soft delete the user
+            }
+
+            return response()->json(['message' => 'Vendor soft deleted successfully.'], 200);
+        }
+
+        return response()->json(['message' => 'Unauthorized.'], 403);
     }
 }

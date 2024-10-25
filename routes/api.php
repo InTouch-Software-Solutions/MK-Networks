@@ -57,6 +57,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/salesman', [SalesmanController::class, 'store']);
     Route::get('/salesman', [SalesmanController::class, 'index']);
 
+    Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);  
+    Route::delete('/salesman/{id}', [SalesmanController::class, 'destroy']);
+
     //Route plan routes
     Route::post('/routes/upload', [RoutePlanController::class, 'uploadroute'])->name('routes.upload');
     Route::get('/routes', [RoutePlanController::class, 'showroute'])->name('routes.show');

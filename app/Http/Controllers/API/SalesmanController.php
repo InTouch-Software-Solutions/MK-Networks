@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\API;
 
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Salesman;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class SalesmanController extends Controller
@@ -41,4 +42,25 @@ class SalesmanController extends Controller
         $salesmen = Salesman::with('user')->get();
         return response()->json(['salesmen' => $salesmen]);
     }
+
+    public function destroy($id)
+    {
+        if (Auth::user() && Auth::user()->role === 'admin') {
+            $salesman = Salesman::find($id);
+
+            if (!$salesman) {
+                return response()->json(['message' => 'Salesman not found.'], 404);
+            }
+            // Soft delete the salesman
+            $salesman->delete();
+            if ($salesman->user) {
+                $salesman->user->delete(); // Soft delete the user
+            }
+
+            return response()->json(['message' => 'Salesman deleted successfully.'], 200);
+        }
+
+        return response()->json(['message' => 'Unauthorized. Only admins can delete salesmen.'], 403);
+    }
+
 }
