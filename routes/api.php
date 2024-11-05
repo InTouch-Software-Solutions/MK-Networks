@@ -51,12 +51,15 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/admin/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForAdmin']);
     Route::get('/salesman/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesperson']);
 
+    Route::get('/salesman/sims', [SimAssignController::class, 'viewSalesmanSims']);
+    Route::get('/vendors/sims', [SimAssignController::class, 'viewVendorSims']);
+
+
 
     Route::post('/vendors', [VendorController::class, 'store']);
     Route::get('/vendors', [VendorController::class, 'index']);
     Route::post('/salesman', [SalesmanController::class, 'store']);
     Route::get('/salesman', [SalesmanController::class, 'index']);
-
     Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);  
     Route::delete('/salesman/{id}', [SalesmanController::class, 'destroy']);
 

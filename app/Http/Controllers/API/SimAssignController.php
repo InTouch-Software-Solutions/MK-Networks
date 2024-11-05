@@ -14,21 +14,21 @@ class SimAssignController extends Controller
 {
     public function simAssignByAdmin(Request $request)
     {
-        
-        
+
+
         // Validate the request
         $request->validate([
             'user_id' => 'required',
             'sim_numbers' => 'required|array',
             'sim_numbers.*' => 'required|string|distinct',
         ]);
-        
+
         $user = User::find($request->user_id);
 
         if (!$user || $user->role !== 'sales') {
             return response()->json(['message' => 'User does not have the sales role'], 403);
         }
-        
+
 
         // Check if SIM numbers are valid and not assigned
         $invalidSims = SimData::whereIn('sim_number', $request->sim_numbers)
@@ -69,7 +69,7 @@ class SimAssignController extends Controller
             'sim_numbers' => 'required|array',
             'sim_numbers.*' => 'required|string|distinct',
         ]);
-        
+
         // Find the user and check their role
         $user = User::find($request->user_id);
 
@@ -130,6 +130,42 @@ class SimAssignController extends Controller
             'data' => $data
         ], 200);
     }
+
+    //salesman can view sims assigned to him by admin
+    public function viewSalesmanSims()
+    {
+        $salesman = Auth::user();
+    
+        if ($salesman->role !== 'sales') {
+            return response()->json(['message' => 'User does not have the sales role'], 403);
+        }
+    
+        $assignments = SimAssign::where('user_id', $salesman->id)->get(['sim_numbers', 'status']);
+    
+        return response()->json([
+            'status' => 'success',
+            'data' => $assignments
+        ], 200);
+    }
+    
+    //vendor can view sims assigned to him by which salesman
+    public function viewVendorSims()
+    {
+        $vendor = Auth::user();
+    
+        if ($vendor->role !== 'vendor') {
+            return response()->json(['message' => 'User does not have the vendor role'], 403);
+        }
+    
+        $assignments = AssignVendor::where('user_id', $vendor->id)->get(['sim_numbers', 'status']);
+    
+        return response()->json([
+            'status' => 'success',
+            'data' => $assignments
+        ], 200);
+    }
+    
+
 
 
 
