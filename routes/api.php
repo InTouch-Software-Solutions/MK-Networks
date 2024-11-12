@@ -44,13 +44,15 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/upload_provider_excel', [SimDataController::class, 'uploadProviderExcel']);
     Route::get('/showexcel', [SimDataController::class, 'showexcel']);
 
-
+    //Sim Assignment
     // Route::get('assignhistory', [SimAssignController::class, 'assignhistory']);
     Route::post('/admin/assign-sim', [SimAssignController::class, 'simAssignByAdmin']);
-    Route::post('/salesman/assign-sim', [SimAssignController::class, 'simAssignBySalesman']);
     Route::get('/admin/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForAdmin']);
-    Route::get('/salesman/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesperson']);
 
+    Route::post('/salesman/assign-sim', [SimAssignController::class, 'simAssignBySalesman']);
+    Route::get('/salesman/sim-assignments', [SimAssignController::class, 'getSimAssignmentsForSalesman']);
+    
+    //view sim assigned 
     Route::get('/salesman/sims', [SimAssignController::class, 'viewSalesmanSims']);
     Route::get('/vendors/sims', [SimAssignController::class, 'viewVendorSims']);
 
@@ -62,6 +64,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/salesman', [SalesmanController::class, 'index']);
     Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);  
     Route::delete('/salesman/{id}', [SalesmanController::class, 'destroy']);
+    Route::post('/vendors/upload-image', [VendorController::class, 'uploadImage'])->name('vendor.uploadImage');
+
 
     //Route plan routes
     Route::post('/routes/upload', [RoutePlanController::class, 'uploadroute'])->name('routes.upload');

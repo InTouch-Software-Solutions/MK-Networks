@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class SimAssign extends Model
 {
     protected $table = "sim_assigns";
-    protected $fillable = ['user_id', 'sim_numbers', 'status'];
+    protected $fillable = ['admin_id','salesman_id', 'sim_numbers', 'status'];
 
-    protected $casts = [
-        'sim_numbers' => 'array',
-    ];
+   
 }

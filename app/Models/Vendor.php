@@ -19,6 +19,7 @@ class Vendor extends Model
         'shop',
         'area',
         'postcode',
+        'image',
     ];
 
     public function user()

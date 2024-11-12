@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('shop');
             $table->string('area');
             $table->string('postcode', 10);
+            $table->string('image')->nullable;
             $table->timestamps();
             $table->softDeletes(); 
         });

@@ -138,13 +138,13 @@ class RoutePlanController extends Controller
     
     
     
-    
+    //get specific planning
     public function getPlannings($userId, Request $request)
     {
         $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
         $plannings = Planning::where('user_id', $userId)->where('date', $date)->get();
         if ($plannings->isEmpty()) {
-            return response()->json(['message' => 'No planning records found for the specified salesperson.'], 404);
+            return response()->json(['message' => 'No planning records found for the specified salesperson on this date.'], 404);
         }
         $response = [
             'date' => $date,

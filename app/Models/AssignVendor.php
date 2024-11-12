@@ -11,7 +11,5 @@ class AssignVendor extends Model
 
     protected $fillable = ['user_id', 'sim_numbers'];
 
-    protected $casts = [
-        'sim_numbers' => 'array',
-    ];
+   
 }

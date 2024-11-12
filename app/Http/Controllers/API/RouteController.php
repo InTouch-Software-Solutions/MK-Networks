@@ -27,11 +27,18 @@ class RouteController extends Controller
     {
         $shopsData = Route::where('area', $area)
             ->distinct()
-            ->get(['id','postcode', 'shop', 'address']);
+            ->get(['id', 'postcode', 'shop', 'address']);
 
-        $response = [];
+        $totalShops = $shopsData->count();
+
+        $response = [
+            'totalShops' => $totalShops, 
+            'shops' => [] 
+        ];
+
+       
         foreach ($shopsData as $shop) {
-            $response[] = [
+            $response['shops'][] = [
                 'id' => $shop->id,
                 'postcode' => $shop->postcode,
                 'shop' => $shop->shop,
