@@ -19,11 +19,15 @@ class Vendor extends Model
         'shop',
         'area',
         'postcode',
-        'image',
+        'images',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
+    protected $casts = [
+        'images' => 'array'
+    ];
 }
