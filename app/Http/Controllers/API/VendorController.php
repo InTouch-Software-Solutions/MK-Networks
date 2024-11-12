@@ -76,34 +76,37 @@ class VendorController extends Controller
         $request->validate([
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate image type and size
         ]);
-
-        $vendor = Auth::user()->vendor; // Assuming the authenticated user has a `vendor` relationship
-
+    
+        // Assuming the authenticated user has a `vendor` relationship
+        $vendor = Auth::user()->vendor;
+    
         if (!$vendor) {
             return response()->json(['message' => 'Vendor not found'], 404);
         }
-
-        // Handle image upload
+    
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName ='vendor_shop_' . time() . '.' . $image->getClientOriginalExtension();
+            $imageName = 'vendor_shop_' . time() . '.' . $image->getClientOriginalExtension();
             $image->move(public_path('images/vendors'), $imageName);
-
-            // Update vendor record
+    
             $vendor->update([
                 'image' => $imageName,
                 'updated_at' => now(),
             ]);
-
+    
             return response()->json([
                 'status' => 'success',
                 'image' => $imageName,
                 'updated_at' => now()->format('d-m-y'),
+                'shop' => $vendor->shop,
+                'area' => $vendor->area,
+                'postcode' => $vendor->postcode,
                 'message' => 'Image added successfully',
             ], 200);
         }
-
+    
         return response()->json(['message' => 'Image upload failed'], 500);
     }
+    
 
 }
