@@ -12,6 +12,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+
 
 
 class RoutePlanController extends Controller
@@ -165,6 +167,44 @@ class RoutePlanController extends Controller
         return response()->json($response);
     }
     
+    public function getSalesmanPlannings(Request $request)
+{
+    // Get the authenticated user's ID
+    $userId = Auth::id();
+
+    // Check if the authenticated user is a salesperson
+    $user = Auth::user();
+    if (!$user || $user->role !== 'sales') { // Assuming 'role' is a column in the users table
+        return response()->json(['message' => 'Unauthorized. User doesnot have a salesman role.'], 403);
+    }
+
+    $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
+    $plannings = Planning::where('user_id', $userId)->where('date', $date)->get();
+
+    if ($plannings->isEmpty()) {
+        return response()->json(['message' => 'No planning records found on this date.'], 404);
+    }
+
+    $response = [
+        'date' => $date,
+        'areas' => []
+    ];
+
+    foreach ($plannings as $planning) {
+        $areaAssignments = json_decode($planning->area, true);
+
+        foreach ($areaAssignments as $assignment) {
+            $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
+            $response['areas'][] = [
+                'area' => $assignment['area'], 
+                'shops' => $shops 
+            ];
+        }
+    }
+
+    return response()->json($response);
+}
+
     
 
 

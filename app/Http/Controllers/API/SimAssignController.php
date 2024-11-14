@@ -250,18 +250,28 @@ class SimAssignController extends Controller
     public function viewSalesmanSims()
     {
         $salesman = Auth::user();
-
+    
         if ($salesman->role !== 'sales') {
             return response()->json(['message' => 'User does not have the sales role'], 403);
         }
-
-        $assignments = SimAssign::where('salesman_id', $salesman->id)->get(['sim_numbers', 'status']);
-
+    
+        $assignments = SimAssign::where('sim_assigns.salesman_id', $salesman->id)
+            ->join('sim_data', 'sim_assigns.sim_numbers', '=', 'sim_data.sim_number')
+            ->select([
+                'sim_assigns.sim_numbers',
+                'sim_assigns.status',
+                'sim_data.network',
+                'sim_data.product',
+                'sim_data.mobile_number'
+            ])
+            ->get();
+    
         return response()->json([
             'status' => 'success',
             'data' => $assignments
         ], 200);
     }
+    
 
     //vendor can view sims assigned to him by which salesman
     public function viewVendorSims()
