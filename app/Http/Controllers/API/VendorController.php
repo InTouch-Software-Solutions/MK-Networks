@@ -76,30 +76,40 @@ class VendorController extends Controller
         $request->validate([
             'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
-
+    
         $vendor = Vendor::where('user_id', Auth::id())->first();
-
+    
         if (!$vendor) {
             return response()->json(['message' => 'Vendor not found'], 404);
         }
-
+    
         if ($request->hasFile('images')) {
+            // Delete existing images from storage
+            if (!empty($vendor->images)) {
+                foreach ($vendor->images as $oldImage) {
+                    $imagePath = public_path('images/vendors/' . $oldImage);
+                    if (file_exists($imagePath)) {
+                        unlink($imagePath);
+                    }
+                }
+            }
+    
+            // Upload new images
             $imageNames = [];
-            $existingImages = $vendor->images ?? [];
-
             foreach ($request->file('images') as $image) {
                 $imageName = 'vendor_shop_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                 $image->move(public_path('images/vendors'), $imageName);
                 $imageNames[] = $imageName;
             }
-
+    
+            // Update vendor with new images
             $vendor->update([
-                'images' => array_merge($existingImages, $imageNames)
+                'images' => $imageNames // Replace old images with new ones
             ]);
-
+    
             return response()->json([
                 'status' => 'success',
-                'message' => 'Images added successfully',
+                'message' => 'Images updated successfully',
                 'data' => [
                     'images' => $vendor->images,
                     'shop' => $vendor->shop,
@@ -110,8 +120,9 @@ class VendorController extends Controller
                 ]
             ], 200);
         }
-
+    
         return response()->json(['message' => 'Image upload failed'], 500);
     }
+    
 
 }
