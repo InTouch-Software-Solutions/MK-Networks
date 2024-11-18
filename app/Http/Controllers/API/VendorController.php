@@ -76,13 +76,13 @@ class VendorController extends Controller
         $request->validate([
             'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
-    
+
         $vendor = Vendor::where('user_id', Auth::id())->first();
-    
+
         if (!$vendor) {
             return response()->json(['message' => 'Vendor not found'], 404);
         }
-    
+
         if ($request->hasFile('images')) {
             // Delete existing images from storage
             if (!empty($vendor->images)) {
@@ -93,7 +93,7 @@ class VendorController extends Controller
                     }
                 }
             }
-    
+
             // Upload new images
             $imageNames = [];
             foreach ($request->file('images') as $image) {
@@ -101,12 +101,12 @@ class VendorController extends Controller
                 $image->move(public_path('images/vendors'), $imageName);
                 $imageNames[] = $imageName;
             }
-    
+
             // Update vendor with new images
             $vendor->update([
                 'images' => $imageNames // Replace old images with new ones
             ]);
-    
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Images updated successfully',
@@ -120,9 +120,59 @@ class VendorController extends Controller
                 ]
             ], 200);
         }
-    
+
         return response()->json(['message' => 'Image upload failed'], 500);
     }
-    
+
+    public function update(Request $request)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'vendor') {
+            return response()->json([
+                'message' => 'Unauthorized.'
+            ], 403);
+        }
+       
+        $request->validate([
+            'name' => 'string|max:255',
+            'email' => 'email|max:255|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8',
+            'phone_number' => 'string|max:255',
+            'address' => 'string|max:255',
+            'shop' => 'string|max:255',
+            'area' => 'string|max:255',
+            'postcode' => 'string|max:10',
+        ]);
+
+        // Update User data
+        $user->update([
+            'name' => $request->name ?? $user->name,
+            'email' => $request->email ?? $user->email,
+        ]);
+
+        if ($request->filled('password')) {
+            $user->update([
+                'password' => Hash::make($request->password)
+            ]);
+        }
+
+        // Update Vendor data
+        if ($user->vendor) {
+            $user->vendor->update([
+                'phone_number' => $request->phone_number ?? $user->vendor->phone_number,
+                'address' => $request->address ?? $user->vendor->address,
+                'shop' => $request->shop ?? $user->vendor->shop,
+                'area' => $request->area ?? $user->vendor->area,
+                'postcode' => $request->postcode ?? $user->vendor->postcode,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Vendor updated successfully',
+            'vendor' => $user->vendor
+        ]);
+    }
+
+
 
 }

@@ -60,6 +60,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/vendors', [VendorController::class, 'store']);
     Route::get('/vendors', [VendorController::class, 'index']);
+    Route::post('/vendors-update', [VendorController::class, 'update']);
     Route::post('/salesman', [SalesmanController::class, 'store']);
     Route::get('/salesman', [SalesmanController::class, 'index']);
     Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);  
