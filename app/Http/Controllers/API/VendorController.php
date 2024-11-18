@@ -71,17 +71,24 @@ class VendorController extends Controller
         return response()->json(['message' => 'Unauthorized.'], 403);
     }
 
-    public function uploadImages(Request $request)
+    public function uploadImages(Request $request, $id)
     {
         $request->validate([
             'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $vendor = Vendor::where('user_id', Auth::id())->first();
+        $user = User::find($id);
+        if (!$user || $user->role !== 'vendor') {
+            return response()->json(['message' => 'User is not a vendor or not found'], 403);
+        }
+
+        // Get the vendor record associated with the user
+        $vendor = $user->vendor;
 
         if (!$vendor) {
             return response()->json(['message' => 'Vendor not found'], 404);
         }
+
 
         if ($request->hasFile('images')) {
             // Delete existing images from storage
@@ -132,7 +139,7 @@ class VendorController extends Controller
                 'message' => 'Unauthorized.'
             ], 403);
         }
-       
+
         $request->validate([
             'name' => 'string|max:255',
             'email' => 'email|max:255|unique:users,email,' . $user->id,

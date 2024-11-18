@@ -49,4 +49,21 @@ class RouteController extends Controller
         return response()->json($response);
     }
 
+    //get specific shop details by id
+    public function getShopById($id)
+    {
+        $shop = Route::find($id);
+
+        if ($shop) {
+            return response()->json([
+                'shop_name' => $shop->shop,
+                'postcode' => $shop->postcode,
+                'area' => $shop->area,
+                'address' => $shop->address,
+            ], 200);
+        } else {
+            return response()->json(['message' => 'Shop not found.'], 404);
+        }
+    }
+
 }

@@ -79,6 +79,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/cities', [RouteController::class, 'getCities']);
     Route::get('/cities/{city}', [RouteController::class, 'getAreas']);
     Route::get('/areas/{area}', [RouteController::class, 'getShopsByArea']);
+    Route::get('/shop/{id}', [RouteController::class, 'getShopById']);
 
 
     // Cart Routes

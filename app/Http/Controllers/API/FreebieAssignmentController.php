@@ -178,19 +178,32 @@ class FreebieAssignmentController extends Controller
         }
 
         $inventoryDetails = $assignments->map(function ($assignment) {
-
             $product = Product::find($assignment->product_id);
+            $assignedBy = User::find($assignment->assigned_by);
+            $vendorAssignments = VendorAssignment::where('product_id', $assignment->product_id)
+                ->where('salesman_id', $assignment->salesman_id)
+                ->get();
+
+            $vendorDetails = $vendorAssignments->map(function ($vendorAssignment) {
+                $vendor = User::find($vendorAssignment->vendor_id);
+
+                return [
+                    'vendor_name' => $vendor ? $vendor->name : 'Unknown Vendor',
+                    'quantity' => $vendorAssignment->quantity,
+                    'type' => $vendorAssignment->type,
+                ];
+            });
 
             return [
-                // 'product_id' => $assignment->product_id,
                 'product_name' => $product ? $product->name : 'Unknown Product',
                 'assigned_quantity' => $assignment->assigned_quantity,
                 'sold_quantity' => $assignment->sold_quantity,
                 'gifted_quantity' => $assignment->gifted_quantity,
                 'remaining_quantity' => $assignment->remaining_quantity,
                 'threshold' => $assignment->threshold,
-                'assigned_by' => $assignment->assigned_by,
+                'assigned_by' => $assignedBy ? $assignedBy->name : 'Unknown Admin',
                 'assigned_at' => Carbon::parse($assignment->assigned_at)->format('d-m-Y'),
+                'vendor_list' => $vendorDetails
             ];
         });
 
@@ -199,6 +212,7 @@ class FreebieAssignmentController extends Controller
             'inventory' => $inventoryDetails
         ], 200);
     }
+
 
     //vendor can view its inventory
     public function vendorInventory()
