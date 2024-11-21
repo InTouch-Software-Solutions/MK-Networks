@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+
 
 class VendorController extends Controller
 {
@@ -45,8 +47,32 @@ class VendorController extends Controller
     public function index()
     {
         $vendors = Vendor::with('user')->get();
-        return response()->json(['vendors' => $vendors]);
+
+        $formattedVendors = $vendors->map(function ($vendor) {
+            return [
+
+                'id' => $vendor->id,
+                'name' => $vendor->user->name ?? null,
+                'email' => $vendor->user->email ?? null,
+                'phone_number' => $vendor->user->phone_number ?? null,
+                'shop' => $vendor->shop,
+                'area' => $vendor->area,
+                'postcode' => $vendor->postcode,
+                'address' => $vendor->address,
+                'images' => $vendor->images,
+                'created_at' => $vendor->created_at->format('d-m-Y'),
+                'updated_at' => $vendor->updated_at->format('d-m-Y'),
+
+            ];
+        });
+
+        // Return the formatted response
+        return response()->json([
+            'status' => 'success',
+            'vendors' => $formattedVendors,
+        ], 200);
     }
+
 
     public function destroy($id)
     {
@@ -73,9 +99,19 @@ class VendorController extends Controller
 
     public function uploadImages(Request $request, $id)
     {
-        $request->validate([
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+        $rules = [
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         $user = User::find($id);
         if (!$user || $user->role !== 'vendor') {
@@ -178,6 +214,31 @@ class VendorController extends Controller
             'message' => 'Vendor updated successfully',
             'vendor' => $user->vendor
         ]);
+    }
+
+
+    public function showProfile()
+    {
+        $userId = Auth::id();
+        $vendor = Vendor::with('user')->where('user_id', $userId)->first();
+
+        if (!$vendor) {
+            return response()->json(['message' => 'Vendor profile not found'], 404);
+        }
+        return response()->json([
+            'status' => 'success',
+            'vendor' => [
+                'id' => $vendor->id,
+                'name' => $vendor->user->name,
+                'email' => $vendor->user->email,
+                'phone_number' => $vendor->user->phone_number,
+                'shop' => $vendor->shop,
+                'area' => $vendor->area,
+                'postcode' => $vendor->postcode,
+                'address' => $vendor->address,
+                'images' => $vendor->images,
+            ],
+        ], 200);
     }
 
 
