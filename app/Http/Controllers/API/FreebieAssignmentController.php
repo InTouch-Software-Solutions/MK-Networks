@@ -48,26 +48,27 @@ class FreebieAssignmentController extends Controller
 
     public function store(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'product_id' => 'required|integer',
             'salesman_id' => 'required|integer',
             'assigned_quantity' => 'required|integer|min:1',
             'threshold' => 'nullable|integer|min:1',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json([
                 'error' => 'Validation failed',
                 'messages' => $validator->errors()
             ], 422);
         }
-
+    
         $validated = $validator->validated();
+    
         $product = Product::find($validated['product_id']);
         if (!$product) {
             return response()->json(['error' => 'Invalid product ID.'], 400);
         }
+    
         $salesman = User::find($validated['salesman_id']);
         if ($salesman->role !== 'sales') {
             return response()->json([
@@ -75,23 +76,43 @@ class FreebieAssignmentController extends Controller
                 'message' => 'The specified user is not a salesman.'
             ], 400);
         }
-
+    
         $threshold = $validated['threshold'] ?? 5;
-        $freebieAssignment = FreebieAssignment::create([
-            'product_id' => $validated['product_id'],
-            'salesman_id' => $validated['salesman_id'],
-            'assigned_quantity' => $validated['assigned_quantity'],
-            'remaining_quantity' => $validated['assigned_quantity'],
-            'threshold' => $threshold,
-            'assigned_by' => auth()->id(),
-            'assigned_at' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Freebie assigned successfully.',
-            'freebie_assignment' => $freebieAssignment
-        ], 201);
+    
+        // Check if a freebie assignment already exists
+        $existingAssignment = FreebieAssignment::where('product_id', $validated['product_id'])
+            ->where('salesman_id', $validated['salesman_id'])
+            ->first();
+    
+        if ($existingAssignment) {
+            // Update existing record
+            $existingAssignment->assigned_quantity += $validated['assigned_quantity'];
+            $existingAssignment->remaining_quantity += $validated['assigned_quantity'];
+            $existingAssignment->save();
+    
+            return response()->json([
+                'message' => 'Freebie quantity updated successfully.',
+                'freebie_assignment' => $existingAssignment
+            ], 200);
+        } else {
+            // Create new record
+            $freebieAssignment = FreebieAssignment::create([
+                'product_id' => $validated['product_id'],
+                'salesman_id' => $validated['salesman_id'],
+                'assigned_quantity' => $validated['assigned_quantity'],
+                'remaining_quantity' => $validated['assigned_quantity'],
+                'threshold' => $threshold,
+                'assigned_by' => auth()->id(),
+                'assigned_at' => now(),
+            ]);
+    
+            return response()->json([
+                'message' => 'Freebie assigned successfully.',
+                'freebie_assignment' => $freebieAssignment
+            ], 201);
+        }
     }
+    
 
 
 
