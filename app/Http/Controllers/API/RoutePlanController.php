@@ -63,9 +63,45 @@ class RoutePlanController extends Controller
 
 
 
+    public function checkAssignedShops(Request $request)
+    {
+        $requestedShops = collect($request->area)
+            ->pluck('shops')
+            ->flatten()
+            ->unique()
+            ->values()
+            ->toArray();
+            
+           
+    
+        $assignedShops = [];
+    
+        foreach ($requestedShops as $shopId) {
+            $existingAssignments = Planning::whereRaw('JSON_CONTAINS(shops, ?)', [json_encode([$shopId])])
+                ->get();
+    
+            foreach ($existingAssignments as $assignment) {
+                $userName = User::find($assignment->user_id)->name ?? 'Unknown';
+    
+                $assignedShops[] = [
+                    'shop_id' => $shopId,
+                    'assigned_to' => $userName
+                ];
+            }
+        }
+    
+        return response()->json([
+            'has_assigned_shops' => !empty($assignedShops),
+            'assigned_shops' => $assignedShops
+        ]);
+    }
+    
+    
+
     // admin assign daily route plan to salesman 
     public function store(Request $request)
     {
+       
         $request->validate([
             'user_id' => 'required',
             'date' => 'nullable|date',
@@ -98,8 +134,21 @@ class RoutePlanController extends Controller
             ];
         }
 
-        // Create a new route planning record
-        $route = planning::create([
+        if (!$request->force) {
+            $assignedShopsResponse = $this->checkAssignedShops($request)->getData();
+            $hasAssignedShops = $assignedShopsResponse->has_assigned_shops;
+        
+            if ($hasAssignedShops) {
+                return response()->json([
+                    'message' => 'Some shops are already assigned. Set force=true to override.',
+                    'requires_confirmation' => true,
+                    // 'assigned_shops' => $assignedShopsResponse->assigned_shops, 
+                ], 409);
+            }
+        }
+        
+
+        $route = Planning::create([
             'user_id' => $request->user_id,
             'date' => $date,
             'area' => json_encode($areaShopAssignments),
@@ -109,37 +158,38 @@ class RoutePlanController extends Controller
         return response()->json(['message' => 'Shops assigned successfully', 'data' => $route]);
     }
 
+
     public function getAllPlannings(Request $request)
     {
         $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
-        $plannings = Planning::where('date', $date)->get();    
+        $plannings = Planning::where('date', $date)->get();
         $response = [
             'date' => $date,
-            'plannings' => [] 
+            'plannings' => []
         ];
-    
+
         foreach ($plannings as $planning) {
             $user = User::where('id', $planning->user_id)->select('name')->first();
             $areaAssignments = json_decode($planning->area, true);
             $areas = [];
-    
+
             foreach ($areaAssignments as $assignment) {
-                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);    
+                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
                 $areas[] = [
-                    'area' => $assignment['area'], 
-                    'shops' => $shops 
+                    'area' => $assignment['area'],
+                    'shops' => $shops
                 ];
             }
             $response['plannings'][] = [
-                'salesman' => $user->name ?? 'Unknown', 
+                'salesman' => $user->name ?? 'Unknown',
                 'areas' => $areas
             ];
         }
         return response()->json($response);
     }
-    
-    
-    
+
+
+
     //get specific planning
     public function getPlannings($userId, Request $request)
     {
@@ -152,60 +202,60 @@ class RoutePlanController extends Controller
             'date' => $date,
             'areas' => []
         ];
-    
+
         foreach ($plannings as $planning) {
             $areaAssignments = json_decode($planning->area, true);
-    
+
             foreach ($areaAssignments as $assignment) {
                 $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
                 $response['areas'][] = [
-                    'area' => $assignment['area'], 
-                    'shops' => $shops 
+                    'area' => $assignment['area'],
+                    'shops' => $shops
                 ];
             }
         }
         return response()->json($response);
     }
-    
+
     public function getSalesmanPlannings(Request $request)
-{
-    // Get the authenticated user's ID
-    $userId = Auth::id();
+    {
+        // Get the authenticated user's ID
+        $userId = Auth::id();
 
-    // Check if the authenticated user is a salesperson
-    $user = Auth::user();
-    if (!$user || $user->role !== 'sales') { // Assuming 'role' is a column in the users table
-        return response()->json(['message' => 'Unauthorized. User doesnot have a salesman role.'], 403);
-    }
-
-    $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
-    $plannings = Planning::where('user_id', $userId)->where('date', $date)->get();
-
-    if ($plannings->isEmpty()) {
-        return response()->json(['message' => 'No planning records found on this date.'], 404);
-    }
-
-    $response = [
-        'date' => $date,
-        'areas' => []
-    ];
-
-    foreach ($plannings as $planning) {
-        $areaAssignments = json_decode($planning->area, true);
-
-        foreach ($areaAssignments as $assignment) {
-            $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
-            $response['areas'][] = [
-                'area' => $assignment['area'], 
-                'shops' => $shops 
-            ];
+        // Check if the authenticated user is a salesperson
+        $user = Auth::user();
+        if (!$user || $user->role !== 'sales') { // Assuming 'role' is a column in the users table
+            return response()->json(['message' => 'Unauthorized. User doesnot have a salesman role.'], 403);
         }
+
+        $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
+        $plannings = Planning::where('user_id', $userId)->where('date', $date)->get();
+
+        if ($plannings->isEmpty()) {
+            return response()->json(['message' => 'No planning records found on this date.'], 404);
+        }
+
+        $response = [
+            'date' => $date,
+            'areas' => []
+        ];
+
+        foreach ($plannings as $planning) {
+            $areaAssignments = json_decode($planning->area, true);
+
+            foreach ($areaAssignments as $assignment) {
+                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
+                $response['areas'][] = [
+                    'area' => $assignment['area'],
+                    'shops' => $shops
+                ];
+            }
+        }
+
+        return response()->json($response);
     }
 
-    return response()->json($response);
-}
 
-    
 
 
 

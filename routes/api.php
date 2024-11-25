@@ -77,11 +77,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::get('/plannings', [RoutePlanController::class, 'getAllPlannings'])->name('plannings.index');
     Route::get('/plannings/{id}', [RoutePlanController::class, 'getPlannings'])->name('plannings.show');
     Route::get('/salesman/plannings', [RoutePlanController::class, 'getSalesmanPlannings'])->name('plannings.getSalesmanPlannings');
+    Route::post('/check-assigned-shops', [RoutePlanController::class, 'checkAssignedShops']);
+
 
     Route::get('/cities', [RouteController::class, 'getCities']);
     Route::get('/cities/{city}', [RouteController::class, 'getAreas']);
     Route::get('/areas/{area}', [RouteController::class, 'getShopsByArea']);
     Route::get('/shop/{id}', [RouteController::class, 'getShopById']);
+    Route::get('/route-history/{city}', [RouteController::class, 'routeHistory']);
 
 
     // Cart Routes
