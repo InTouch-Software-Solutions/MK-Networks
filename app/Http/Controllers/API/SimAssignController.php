@@ -8,6 +8,7 @@ use App\Models\SimAssign;
 use App\Models\AssignVendor;
 use Illuminate\Http\Request;
 use App\Models\VendorAssignment;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
@@ -150,50 +151,111 @@ class SimAssignController extends Controller
 
     public function getSimAssignmentsForAdmin()
     {
-        $assignedSims = SimAssign::select('salesman_id')
-            ->selectRaw('COUNT(*) as total_sims')
-            ->selectRaw('SUM(CASE WHEN status = true THEN 1 ELSE 0 END) as assigned_to_vendor')
-            ->selectRaw('SUM(CASE WHEN  status = 0 OR status IS NULL THEN 1 ELSE 0 END) as available_sims')
-            ->groupBy('salesman_id')
+        $adminInventoryStats = SimData::select('network')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('network')
             ->get()
-            ->map(function ($assignment) {
-                $salesman = User::find($assignment->salesman_id);
-
-                $vendorAssignments = AssignVendor::where('salesman_id', $assignment->salesman_id)->get()
-                    ->map(function ($vendorAssign) {
-                        $vendor = User::find($vendorAssign->vendor_id);
-                        $totalSimsForVendor = AssignVendor::where('vendor_id', $vendorAssign->vendor_id)
-                            ->count();  // Counts the number of SIM assignments for the vendor
-        
-                        return [
-                            'vendor' => $vendor ? $vendor->name : null,
-                            'sim_number' => $vendorAssign->sim_numbers,
-                            'assigned_at' => $vendorAssign->created_at,
-                            'total_sims_assigned_to_vendor' => $totalSimsForVendor
-                        ];
-                    });
-
-
-                return [
-                    'salesman' => $salesman ? $salesman->name : null,
-                    'total_sims' => $assignment->total_sims,
-                    'assigned_to_vendor' => $assignment->assigned_to_vendor,
-                    'available_sims' => $assignment->available_sims,
-                    'sims_detail' => $assignment->sim_numbers,
-                    'assigned_at' => $assignment->created_at,
-                    'vendor_assignments' => $vendorAssignments,
-
-                ];
-            });
-
+            ->pluck('count', 'network')
+            ->toArray();
+    
+        $totalAdminSims = array_sum($adminInventoryStats);
+    
+        $assignedSims = SimAssign::select('salesman_id')
+        ->selectRaw('GROUP_CONCAT(sim_numbers) as all_sim_numbers')
+        ->selectRaw('COUNT(*) as total_sims')
+        ->selectRaw('SUM(CASE WHEN status = true THEN 1 ELSE 0 END) as assigned_to_vendor')
+        ->selectRaw('SUM(CASE WHEN status = 0 OR status IS NULL THEN 1 ELSE 0 END) as available_sims')
+        ->groupBy('salesman_id')
+        ->get()
+        ->map(function ($assignment) {
+            $salesman = User::find($assignment->salesman_id);
+            
+            $allSimNumbers = collect(explode(',', $assignment->all_sim_numbers))
+                ->unique()
+                ->values()
+                ->toArray();
+            
+            $networkStats = SimData::whereIn('sim_number', $allSimNumbers)
+                ->select('network')
+                ->selectRaw('COUNT(*) as count')
+                ->groupBy('network')
+                ->get()
+                ->pluck('count', 'network')
+                ->toArray();
+            
+            $vendorAssignments = AssignVendor::where('salesman_id', $assignment->salesman_id)
+                ->get()
+                ->groupBy('vendor_id')
+                ->map(function ($vendorGroup) {
+                    $vendor = User::find($vendorGroup->first()->vendor_id);
+                    
+                    $allVendorSims = $vendorGroup->pluck('sim_numbers')
+                        ->map(fn($nums) => explode(',', $nums))
+                        ->flatten()
+                        ->unique()
+                        ->values();
+                    
+                    $vendorNetworkStats = SimData::whereIn('sim_number', $allVendorSims)
+                        ->select('network')
+                        ->selectRaw('COUNT(*) as count')
+                        ->groupBy('network')
+                        ->get()
+                        ->pluck('count', 'network')
+                        ->toArray();
+                    
+                    return [
+                        'vendor' => $vendor ? $vendor->name : null,
+                        'sim_numbers' => $allVendorSims->toArray(),
+                        'total_sims' => $allVendorSims->count(),
+                        'network_distribution' => $vendorNetworkStats
+                    ];
+                })->values();
+            
+            return [
+                'salesman' => $salesman ? $salesman->name : null,
+                'total_sims' => count($allSimNumbers),
+                'assigned_to_vendor' => $assignment->assigned_to_vendor,
+                'available_sims' => $assignment->available_sims,
+                'network_distribution' => $networkStats,
+                'vendor_assignments' => $vendorAssignments,
+            ];
+        });
+    
+        $overallAssignedSimNumbers = SimAssign::pluck('sim_numbers')->toArray();
+        $allAssignedSimNumbers = collect($overallAssignedSimNumbers)
+            ->map(fn ($numbers) => explode(',', $numbers))
+            ->flatten()
+            ->toArray();
+    
+        $overallNetworkStats = SimData::whereIn('sim_number', $allAssignedSimNumbers)
+            ->select('network')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('network')
+            ->get()
+            ->pluck('count', 'network')
+            ->toArray();
+    
         return response()->json([
             'status' => 'success',
-            'total_sims_assigned' => $assignedSims->sum('total_sims'),
-            'total_vendor_assigned' => $assignedSims->sum('assigned_to_vendor'),
-            'total_available' => $assignedSims->sum('available_sims'),
+            'admin_inventory' => [
+                'total_sims' => $totalAdminSims,
+                'network_distribution' => $adminInventoryStats
+            ],
+            'assigned_stats' => [
+                'total_sims_assigned' => $assignedSims->sum('total_sims'),
+                'total_vendor_assigned' => $assignedSims->sum('assigned_to_vendor'),
+                'total_available' => $assignedSims->sum('available_sims'),
+                'network_distribution' => $overallNetworkStats,
+            ],
             'assignments' => $assignedSims
         ], 200);
     }
+    
+
+
+    
+    
+
 
 
     public function getSimAssignmentsForSalesman()
@@ -250,11 +312,11 @@ class SimAssignController extends Controller
     public function viewSalesmanSims()
     {
         $salesman = Auth::user();
-    
+
         if ($salesman->role !== 'sales') {
             return response()->json(['message' => 'User does not have the sales role'], 403);
         }
-    
+
         $assignments = SimAssign::where('sim_assigns.salesman_id', $salesman->id)
             ->join('sim_data', 'sim_assigns.sim_numbers', '=', 'sim_data.sim_number')
             ->select([
@@ -265,13 +327,13 @@ class SimAssignController extends Controller
                 'sim_data.mobile_number'
             ])
             ->get();
-    
+
         return response()->json([
             'status' => 'success',
             'data' => $assignments
         ], 200);
     }
-    
+
 
     //vendor can view sims assigned to him by which salesman
     public function viewVendorSims()
@@ -281,16 +343,16 @@ class SimAssignController extends Controller
         if ($vendor->role !== 'vendor') {
             return response()->json(['message' => 'User does not have the vendor role'], 403);
         }
-        
+
         $assignments = AssignVendor::where('vendor_id', $vendor->id)
-        ->get(['sim_numbers', 'salesman_id'])
-        ->map(function ($assignment) {
-            $salesman = User::find($assignment->salesman_id);
-            return [
-                'sim_number' => $assignment->sim_numbers,
-                'salesman_name' => $salesman ? $salesman->name : null, 
-            ];
-        });
+            ->get(['sim_numbers', 'salesman_id'])
+            ->map(function ($assignment) {
+                $salesman = User::find($assignment->salesman_id);
+                return [
+                    'sim_number' => $assignment->sim_numbers,
+                    'salesman_name' => $salesman ? $salesman->name : null,
+                ];
+            });
         return response()->json([
             'status' => 'success',
             'data' => $assignments
