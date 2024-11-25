@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\User;
 use App\Models\Route;
+use App\Models\Vendor;
 use App\Models\Planning;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -54,19 +55,22 @@ class RouteController extends Controller
     //get specific shop details by id
     public function getShopById($id)
     {
-        $shop = Route::find($id);
-
-        if ($shop) {
-            return response()->json([
-                'shop_name' => $shop->shop,
-                'postcode' => $shop->postcode,
-                'area' => $shop->area,
-                'address' => $shop->address,
-            ], 200);
-        } else {
+        $shop = Route::find($id);    
+        if (!$shop) {
             return response()->json(['message' => 'Shop not found.'], 404);
-        }
+        }    
+        $vendor = Vendor::where('shop_id', $id)->pluck('user_id')->first();
+        $vendor = $vendor !== null ? (int)$vendor : null;
+        
+        return response()->json([
+            'shop_name' => $shop->shop,
+            'postcode' => $shop->postcode,
+            'area' => $shop->area,
+            'address' => $shop->address,
+            'vendor' => $vendor,
+        ], 200);
     }
+    
 
     public function routeHistory($city)
     {

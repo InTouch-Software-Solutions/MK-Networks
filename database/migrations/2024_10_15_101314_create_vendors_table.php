@@ -18,9 +18,12 @@ return new class extends Migration {
             $table->string('shop');
             $table->string('area');
             $table->string('postcode', 10);
-            $table->json('images')->nullable;
+            $table->json('images')->nullable();
+            $table->unsignedBigInteger('shop_id')->nullable();
             $table->timestamps();
             $table->softDeletes(); 
+
+            // $table->foreign('shop_id')->references('id')->on('routes')->onDelete('cascade');
         });
     }
 

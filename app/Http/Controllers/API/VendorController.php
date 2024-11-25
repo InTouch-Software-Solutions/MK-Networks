@@ -24,6 +24,7 @@ class VendorController extends Controller
             'shop' => 'required|string|max:255',
             'area' => 'required|string|max:255',
             'postcode' => 'required|string|max:10',
+            'shop_id' => 'required|exists:routes,id',
         ]);
 
         $user = User::create([
@@ -39,6 +40,7 @@ class VendorController extends Controller
             'shop' => $request->shop,
             'area' => $request->area,
             'postcode' => $request->postcode,
+            'shop_id' => $request->shop_id,
         ]);
 
         return response()->json(['message' => 'Vendor created successfully', 'vendor' => $vendor], 201);
@@ -207,6 +209,7 @@ class VendorController extends Controller
                 'shop' => $request->shop ?? $user->vendor->shop,
                 'area' => $request->area ?? $user->vendor->area,
                 'postcode' => $request->postcode ?? $user->vendor->postcode,
+                'shop_id' => $request->shop_id ?? $user->vendor->shop_id,
             ]);
         }
 
