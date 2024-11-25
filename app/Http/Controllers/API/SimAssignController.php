@@ -190,10 +190,12 @@ class SimAssignController extends Controller
                     $vendor = User::find($vendorGroup->first()->vendor_id);
                     
                     $allVendorSims = $vendorGroup->pluck('sim_numbers')
-                        ->map(fn($nums) => explode(',', $nums))
-                        ->flatten()
-                        ->unique()
-                        ->values();
+                    ->map(function($nums) {
+                        return explode(',', $nums);
+                    })
+                    ->flatten()
+                    ->unique()
+                    ->values();
                     
                     $vendorNetworkStats = SimData::whereIn('sim_number', $allVendorSims)
                         ->select('network')
@@ -207,7 +209,7 @@ class SimAssignController extends Controller
                         'vendor' => $vendor ? $vendor->name : null,
                         'sim_numbers' => $allVendorSims->toArray(),
                         'total_sims' => $allVendorSims->count(),
-                        'network_distribution' => $vendorNetworkStats
+                        'network_distribution_vendors' => $vendorNetworkStats
                     ];
                 })->values();
             
@@ -216,7 +218,7 @@ class SimAssignController extends Controller
                 'total_sims' => count($allSimNumbers),
                 'assigned_to_vendor' => $assignment->assigned_to_vendor,
                 'available_sims' => $assignment->available_sims,
-                'network_distribution' => $networkStats,
+                'network_distribution_sales' => $networkStats,
                 'vendor_assignments' => $vendorAssignments,
             ];
         });
@@ -239,7 +241,7 @@ class SimAssignController extends Controller
             'status' => 'success',
             'admin_inventory' => [
                 'total_sims' => $totalAdminSims,
-                'network_distribution' => $adminInventoryStats
+                'network_distribution_admin' => $adminInventoryStats
             ],
             'assigned_stats' => [
                 'total_sims_assigned' => $assignedSims->sum('total_sims'),
