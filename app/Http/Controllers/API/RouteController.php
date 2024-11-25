@@ -56,20 +56,26 @@ class RouteController extends Controller
     public function getShopById($id)
     {
         $shop = Route::find($id);    
+    
         if (!$shop) {
             return response()->json(['message' => 'Shop not found.'], 404);
         }    
-        $vendor = Vendor::where('shop_id', $id)->pluck('user_id')->first();
-        $vendor = $vendor !== null ? (int)$vendor : null;
-        
+    
+        $vendor = Vendor::where('shop_id', $id)
+            ->join('users', 'vendors.user_id', '=', 'users.id')
+            ->select('vendors.user_id as id', 'users.name as vendor_name')
+            ->first();
+    
         return response()->json([
             'shop_name' => $shop->shop,
             'postcode' => $shop->postcode,
             'area' => $shop->area,
             'address' => $shop->address,
-            'vendor' => $vendor,
+            'vendor_id' => $vendor ? (int)$vendor->id : null,
+            'vendor_name' => $vendor ? $vendor->vendor_name : null,
         ], 200);
     }
+    
     
 
     public function routeHistory($city)
