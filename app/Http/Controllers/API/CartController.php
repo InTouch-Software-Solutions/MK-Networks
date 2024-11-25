@@ -13,33 +13,41 @@ class CartController extends Controller
 {
     public function store(Request $request)
     {
-        // Validate input
         $request->validate([
-            'product_id' => 'required',
-            
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
         ]);
         $user = Auth::user();
         $product = Product::find($request->product_id);
-        // Create a new cart record
-        $cart = Cart::where('user_id', $user->id)->where('product_id', $request->product_id)->first();
-        if($cart){
-            $cart->quantity = $cart->quantity + 1;
-            $cart->total = (int)$cart->total + (int)$product->price;
-        }else{
+    
+        $cart = Cart::where('user_id', $user->id)
+            ->where('product_id', $request->product_id)
+            ->first();
+    
+        if ($cart) {
+            $cart->quantity += $request->quantity; 
+            $cart->total = $cart->quantity * (int)$product->price; 
+        } else {
             $cart = new Cart();
             $cart->user_id = $user->id;
             $cart->product_id = $product->id;
-            $cart->quantity = 1;
+            $cart->quantity = $request->quantity; 
             $cart->price = $product->price;
-            $cart->total = $product->price;
+            $cart->total = $cart->quantity * (int)$product->price; 
             $cart->name = $product->name;
+    
             $images = json_decode($product->image);
-            $cart->image = $images[0];
+            $cart->image = $images[0] ?? null; 
         }
+    
         $cart->save();
-
-        return response()->json(['message' => 'Product added to cart successfully', 'data' => $cart]);
+    
+        return response()->json([
+            'message' => 'Product added to cart successfully',
+            'data' => $cart,
+        ]);
     }
+    
 
     public function index()
     {
