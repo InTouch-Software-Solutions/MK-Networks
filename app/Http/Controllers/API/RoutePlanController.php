@@ -23,8 +23,11 @@ class RoutePlanController extends Controller
     {
         // Validate the request
         $request->validate([
+            'city' => 'required|string',
             'file' => 'required|mimes:xlsx,csv|max:2048',
         ]);
+
+        $city = $request->input('city');
 
         $originalFile = $request->file('file');
         $extension = $originalFile->getClientOriginalExtension();
@@ -42,7 +45,8 @@ class RoutePlanController extends Controller
             $area = strtok($postcode, ' ');
 
             $routeData = new Route();
-            $routeData->city = $worksheet->getCell('E' . $row)->getValue();
+            // $routeData->city = $worksheet->getCell('E' . $row)->getValue();
+            $routeData->city = $city;
             $routeData->area = $area;
             $routeData->postcode = $postcode;
             $routeData->shop = $worksheet->getCell('B' . $row)->getValue();
