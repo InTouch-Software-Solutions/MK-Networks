@@ -67,6 +67,7 @@ class RouteController extends Controller
             ->first();
     
         return response()->json([
+            'shop_id' => $shop->id,
             'shop_name' => $shop->shop,
             'postcode' => $shop->postcode,
             'area' => $shop->area,
