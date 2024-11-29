@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CartController;
+use App\Http\Controllers\API\RouteController;
 use App\Http\Controllers\API\VendorController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\SimDataController;
@@ -14,7 +15,7 @@ use App\Http\Controllers\API\WishlistController;
 use App\Http\Controllers\API\RoutePlanController;
 use App\Http\Controllers\API\SimAssignController;
 use App\Http\Controllers\API\FreebieAssignmentController;
-use App\Http\Controllers\API\RouteController;
+use App\Http\Controllers\API\CheckinNotificationController;
 
 
 
@@ -64,6 +65,8 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);  
     Route::post('/vendors/upload-images/{id}', [VendorController::class, 'uploadImages'])->name('vendor.uploadImages');
     Route::get('/vendors/profile', [VendorController::class, 'showProfile']);
+
+    Route::get('/checkin-notifications', [CheckinNotificationController::class, 'index']);
 
     Route::post('/salesman', [SalesmanController::class, 'store']);
     Route::get('/salesman', [SalesmanController::class, 'index']);

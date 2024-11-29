@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
+use App\Models\CheckinNotification;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -103,6 +104,10 @@ class VendorController extends Controller
     {
         $rules = [
             'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
+            'street' => 'nullable|string',
+            'city' => 'nullable|string',
+            'postcode' => 'nullable|string',
+            'date' => 'nullable|date',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -149,7 +154,16 @@ class VendorController extends Controller
 
             // Update vendor with new images
             $vendor->update([
-                'images' => $imageNames // Replace old images with new ones
+                'images' => $imageNames 
+            ]);
+
+            CheckinNotification::create([
+                'salesman_id' => Auth::id(),
+                'street' => $request->street ?? null,
+                'city' => $request->city ?? null,
+                'postcode' => $request->postcode ?? null,
+                'date' => $request->date ?? null,
+                'images' => $imageNames,
             ]);
 
             return response()->json([
