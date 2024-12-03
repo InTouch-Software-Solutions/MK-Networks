@@ -104,10 +104,10 @@ class VendorController extends Controller
     {
         $rules = [
             'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
-            'street' => 'nullable|string',
-            'city' => 'nullable|string',
-            'postcode' => 'nullable|string',
-            'date' => 'nullable|date',
+            'street' => 'required|string',
+            'city' => 'required|string',
+            'postcode' => 'required|string',
+            'date' => 'required|date',
         ];
 
         $validator = Validator::make($request->all(), $rules);
