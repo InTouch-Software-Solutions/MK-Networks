@@ -164,62 +164,101 @@ class RoutePlanController extends Controller
 
 
     public function getAllPlannings(Request $request)
-    {
-        $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
-        $plannings = Planning::where('date', $date)->get();
-        $response = [
-            'date' => $date,
-            'plannings' => []
-        ];
+{
+    if (auth()->user()->role !== 'admin') {
+        return response()->json(['message' => 'Unauthorized access.'], 403);
+    }
 
-        foreach ($plannings as $planning) {
-            $user = User::where('id', $planning->user_id)->select('name')->first();
-            $areaAssignments = json_decode($planning->area, true);
-            $areas = [];
+    $date = $request->input('date');
 
-            foreach ($areaAssignments as $assignment) {
-                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
-                $areas[] = [
-                    'area' => $assignment['area'],
-                    'shops' => $shops
-                ];
-            }
-            $response['plannings'][] = [
-                'salesman' => $user->name ?? 'Unknown',
-                'areas' => $areas
+    $planningsQuery = $date 
+        ? Planning::where('date', $date) 
+        : Planning::query();
+
+    $plannings = $planningsQuery->orderBy('date', 'desc')->get();
+
+    $response = [
+        'date' => $date ?? 'All Dates',
+        'plannings' => []
+    ];
+
+    foreach ($plannings as $planning) {
+        $planningDate = Carbon::parse($planning->date)->format('d-m-Y');
+        $user = User::where('id', $planning->user_id)->select('name')->first();
+
+        $areaAssignments = json_decode($planning->area, true);
+        $areas = [];
+
+        foreach ($areaAssignments as $assignment) {
+
+            $shops = Route::whereIn('id', $assignment['shops'])
+                ->get(['shop', 'address', 'postcode']); 
+
+            $areas[] = [
+                'area' => $assignment['area'],
+                'shops' => $shops
             ];
         }
-        return response()->json($response);
+
+        
+        $response['plannings'][] = [
+            'date'=> $planningDate,
+            'salesman' => $user->name ?? 'Unknown',
+            'areas' => $areas
+        ];
     }
 
+    return response()->json($response);
+}
+
+    
 
 
-    //get specific planning
+
+    //get specific planning for a salesman
     public function getPlannings($userId, Request $request)
     {
-        $date = $request->input('date') ?? Carbon::today()->format('Y-m-d');
-        $plannings = Planning::where('user_id', $userId)->where('date', $date)->get();
-        if ($plannings->isEmpty()) {
-            return response()->json(['message' => 'No planning records found for the specified salesperson on this date.'], 404);
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized access'], 403);
         }
+    
+        $date = $request->input('date');
+        $query = Planning::where('user_id', $userId);
+    
+        if ($date) {
+            $query->where('date', $date);
+        }
+    
+        $plannings = $query->orderBy('date', 'desc')->get();
+    
+        if ($plannings->isEmpty()) {
+            return response()->json(['message' => 'No planning records found for the specified salesperson.'], 404);
+        }
+    
         $response = [
-            'date' => $date,
+            // 'date' => $date ?? 'All dates',
             'areas' => []
         ];
-
+    
         foreach ($plannings as $planning) {
             $areaAssignments = json_decode($planning->area, true);
-
+    
             foreach ($areaAssignments as $assignment) {
-                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
+                $planningDate = Carbon::parse($planning->date)->format('d-m-Y');
+                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address', 'postcode']);
+                
+               
                 $response['areas'][] = [
+                    'date'=>$planningDate,
                     'area' => $assignment['area'],
                     'shops' => $shops
                 ];
             }
         }
+    
         return response()->json($response);
     }
+    
 
     public function getSalesmanPlannings(Request $request)
     {
