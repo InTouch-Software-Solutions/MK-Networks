@@ -75,37 +75,37 @@ class RoutePlanController extends Controller
             ->unique()
             ->values()
             ->toArray();
-            
-           
-    
+
+
+
         $assignedShops = [];
-    
+
         foreach ($requestedShops as $shopId) {
             $existingAssignments = Planning::whereRaw('JSON_CONTAINS(shops, ?)', [json_encode([$shopId])])
                 ->get();
-    
+
             foreach ($existingAssignments as $assignment) {
                 $userName = User::find($assignment->user_id)->name ?? 'Unknown';
-    
+
                 $assignedShops[] = [
                     'shop_id' => $shopId,
                     'assigned_to' => $userName
                 ];
             }
         }
-    
+
         return response()->json([
             'has_assigned_shops' => !empty($assignedShops),
             'assigned_shops' => $assignedShops
         ]);
     }
-    
-    
+
+
 
     // admin assign daily route plan to salesman 
     public function store(Request $request)
     {
-       
+
         $request->validate([
             'user_id' => 'required',
             'date' => 'nullable|date',
@@ -141,7 +141,7 @@ class RoutePlanController extends Controller
         if (!$request->force) {
             $assignedShopsResponse = $this->checkAssignedShops($request)->getData();
             $hasAssignedShops = $assignedShopsResponse->has_assigned_shops;
-        
+
             if ($hasAssignedShops) {
                 return response()->json([
                     'message' => 'Some shops are already assigned. Set force=true to override.',
@@ -150,7 +150,7 @@ class RoutePlanController extends Controller
                 ], 409);
             }
         }
-        
+
 
         $route = Planning::create([
             'user_id' => $request->user_id,
@@ -164,54 +164,61 @@ class RoutePlanController extends Controller
 
 
     public function getAllPlannings(Request $request)
-{
-    if (auth()->user()->role !== 'admin') {
-        return response()->json(['message' => 'Unauthorized access.'], 403);
-    }
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized access.'], 403);
+        }
 
-    $date = $request->input('date');
+        $date = $request->input('date');
 
-    $planningsQuery = $date 
-        ? Planning::where('date', $date) 
-        : Planning::query();
+        $planningsQuery = $date
+            ? Planning::where('date', $date)
+            : Planning::query();
 
-    $plannings = $planningsQuery->orderBy('date', 'desc')->get();
+        $plannings = $planningsQuery->orderBy('date', 'desc')->get();
 
-    $response = [
-        'date' => $date ?? 'All Dates',
-        'plannings' => []
-    ];
+        $response = [
+            'date' => $date ?? 'All Dates',
+            'total_plannings' => $plannings->count(),
+            'plannings' => []
+        ];
 
-    foreach ($plannings as $planning) {
-        $planningDate = Carbon::parse($planning->date)->format('d-m-Y');
-        $user = User::where('id', $planning->user_id)->select('name')->first();
+        foreach ($plannings as $planning) {
+            $planningDate = Carbon::parse($planning->date)->format('d-m-Y');
+            $user = User::where('id', $planning->user_id)->select('name')->first();
 
-        $areaAssignments = json_decode($planning->area, true);
-        $areas = [];
+            $areaAssignments = json_decode($planning->area, true);
+            $areas = [];
+            $areaShopCount = 0;
 
-        foreach ($areaAssignments as $assignment) {
+            foreach ($areaAssignments as $assignment) {
 
-            $shops = Route::whereIn('id', $assignment['shops'])
-                ->get(['shop', 'address', 'postcode']); 
+                $shops = Route::whereIn('id', $assignment['shops'])
+                    ->get(['shop', 'address', 'postcode']);
 
-            $areas[] = [
-                'area' => $assignment['area'],
-                'shops' => $shops
+                $shopCount = $shops->count();
+                $areaShopCount += $shopCount;
+
+                $areas[] = [
+                    'area' => $assignment['area'],
+                    'total_shops_areawise' => $shopCount,
+                    'shops' => $shops
+                ];
+            }
+
+
+            $response['plannings'][] = [
+                'date' => $planningDate,
+                'salesman' => $user->name ?? 'Unknown',
+                'total_shops' => $areaShopCount,
+                'areas' => $areas
             ];
         }
 
-        
-        $response['plannings'][] = [
-            'date'=> $planningDate,
-            'salesman' => $user->name ?? 'Unknown',
-            'areas' => $areas
-        ];
+        return response()->json($response);
     }
 
-    return response()->json($response);
-}
 
-    
 
 
 
@@ -221,44 +228,52 @@ class RoutePlanController extends Controller
         if (auth()->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized access'], 403);
         }
-    
+
         $date = $request->input('date');
         $query = Planning::where('user_id', $userId);
-    
+
         if ($date) {
             $query->where('date', $date);
         }
-    
+
         $plannings = $query->orderBy('date', 'desc')->get();
-    
+
         if ($plannings->isEmpty()) {
             return response()->json(['message' => 'No planning records found for the specified salesperson.'], 404);
         }
-    
+
         $response = [
             // 'date' => $date ?? 'All dates',
-            'areas' => []
+            'total_shops'=> 0,
+            'areas' => [],
         ];
-    
+
         foreach ($plannings as $planning) {
             $areaAssignments = json_decode($planning->area, true);
-    
+            $areaShopCount = 0;
+
             foreach ($areaAssignments as $assignment) {
                 $planningDate = Carbon::parse($planning->date)->format('d-m-Y');
                 $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address', 'postcode']);
-                
-               
+
+                $shopCount = $shops->count();
+                $areaShopCount += $shopCount;
+
                 $response['areas'][] = [
-                    'date'=>$planningDate,
+                    'date' => $planningDate,
                     'area' => $assignment['area'],
+                    'areawise_shops'=>$shopCount,
                     'shops' => $shops
                 ];
+
+                
             }
+            $response['total_shops'] += $areaShopCount;
         }
-    
+
         return response()->json($response);
     }
-    
+
 
     public function getSalesmanPlannings(Request $request)
     {
