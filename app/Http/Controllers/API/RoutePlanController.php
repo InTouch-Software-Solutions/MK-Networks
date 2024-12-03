@@ -277,12 +277,10 @@ class RoutePlanController extends Controller
 
     public function getSalesmanPlannings(Request $request)
     {
-        // Get the authenticated user's ID
         $userId = Auth::id();
 
-        // Check if the authenticated user is a salesperson
         $user = Auth::user();
-        if (!$user || $user->role !== 'sales') { // Assuming 'role' is a column in the users table
+        if (!$user || $user->role !== 'sales') { 
             return response()->json(['message' => 'Unauthorized. User doesnot have a salesman role.'], 403);
         }
 
@@ -295,19 +293,27 @@ class RoutePlanController extends Controller
 
         $response = [
             'date' => $date,
+            'total_shops'=> 0,
             'areas' => []
         ];
 
         foreach ($plannings as $planning) {
             $areaAssignments = json_decode($planning->area, true);
+            $areaShopCount = 0;
 
             foreach ($areaAssignments as $assignment) {
-                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address']);
+                $shops = Route::whereIn('id', $assignment['shops'])->get(['shop', 'address', 'postcode']);
+
+                $shopCount = $shops->count();
+                $areaShopCount += $shopCount;
+
                 $response['areas'][] = [
+                    'areawise_shops'=>$shopCount,
                     'area' => $assignment['area'],
                     'shops' => $shops
                 ];
             }
+            $response['total_shops'] += $areaShopCount;
         }
 
         return response()->json($response);
