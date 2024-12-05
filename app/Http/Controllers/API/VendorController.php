@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\User;
+use App\Models\Route;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
 use App\Models\CheckinNotification;
@@ -14,38 +15,60 @@ use Illuminate\Support\Facades\Validator;
 
 class VendorController extends Controller
 {
+
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'phone_number' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'shop' => 'required|string|max:255',
+            'city' => 'required|string|max:255',
             'area' => 'required|string|max:255',
             'postcode' => 'required|string|max:10',
-            'shop_id' => 'required|exists:routes,id',
-        ]);
-
+            'shop' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+        ];
+    
+        $validator = Validator::make($request->all(), $rules);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation errors',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+    
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'vendor',
         ]);
-
+    
         $vendor = $user->vendor()->create([
             'phone_number' => $request->phone_number,
             'address' => $request->address,
             'shop' => $request->shop,
             'area' => $request->area,
             'postcode' => $request->postcode,
-            'shop_id' => $request->shop_id,
         ]);
-
-        return response()->json(['message' => 'Vendor created successfully', 'vendor' => $vendor], 201);
+    
+        $route = Route::create([
+            'city' => $request->city,
+            'area' => $request->area,
+            'postcode' => $request->postcode,
+            'shop' => $request->shop,
+            'address' => $request->address,
+        ]);
+    
+        return response()->json([
+            'message' => 'Vendor created successfully',
+            'vendor' => $vendor,
+            'route' => $route,
+        ], 201);
     }
+    
 
     public function index()
     {
@@ -57,7 +80,7 @@ class VendorController extends Controller
                 'id' => $vendor->id,
                 'name' => $vendor->user->name ?? null,
                 'email' => $vendor->user->email ?? null,
-                'phone_number' => $vendor->user->phone_number ?? null,
+                'phone_number' => $vendor->phone_number ?? null,
                 'shop' => $vendor->shop,
                 'area' => $vendor->area,
                 'postcode' => $vendor->postcode,
@@ -73,6 +96,7 @@ class VendorController extends Controller
         return response()->json([
             'status' => 'success',
             'vendors' => $formattedVendors,
+            
         ], 200);
     }
 
